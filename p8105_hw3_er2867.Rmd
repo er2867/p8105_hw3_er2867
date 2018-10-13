@@ -111,7 +111,7 @@ Problem 2 - load data from p8105 datasets
 data(instacart)
 View(instacart)
 ```
- write a short description of the dataset, noting the size and structure of the data, describing some key variables, and giving illstrative examples of observations.
+ write a short description of the dataset, noting the size and structure of the data, describing some key variables, and giving illstrative examples of observations- The dataset has 1384617 rows and 15 columns, which include numerical variables like 'aisle_id', as well as charecter vectors such as 'aisle'
  
 ```{r}
 nrow(instacart)
@@ -144,9 +144,38 @@ instacart_number =
 View(instacart_number)  
 
 ggplot(instacart_number, aes(x = aisle_id, y = number_items)) + 
-  geom_point()
+  geom_bar(stat = "identity") +
+  scale_x_discrete()
+
 ```
 
+Make a table showing the most popular item in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”.
+```{r}
+instacart_popular = 
+  instacart %>% 
+  filter(aisle == "baking ingredients"|aisle == "dog food care"|aisle == "packaged vegetables fruits") %>% 
+  group_by(aisle) %>% 
+  summarise(most_pop = max(product_name, na.rm = TRUE),
+            most_pop= max(product_name, na.rm = TRUE),
+            most_pop = max(product_name, na.rm = TRUE)) %>% 
+            knitr::kable()
+```
+Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+```{r}
+
+instacart_hour =
+  instacart %>% 
+  janitor::clean_names() %>% 
+  filter(product_name == "Pink Lady Apples"|product_name == "Coffee Ice Cream") %>% 
+  mutate(dow = (order_dow + 1)) %>% 
+  group_by(dow) %>% 
+  summarise(mean_hour = mean(order_hour_of_day)) %>% 
+  mutate(dayz = wday(dow, label = TRUE, abbr = TRUE)) %>% 
+  mutate(round_hour = round(mean_hour)) %>% 
+  select(round_hour, dayz)
+  knitr::kable()
+
+```
 
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
