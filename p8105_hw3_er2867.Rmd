@@ -1,0 +1,168 @@
+---
+title: "p8105_hw3_er2867"
+author: "Elliot"
+date: "October 11, 2018"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(p8105.datasets)
+
+install.packages("ggthemes")
+install.packages("viridis")
+install.packages("devtools")
+devtools::install_github("p8105/p8105.datasets")
+devtools::install_github("thomasp85/patchwork")
+
+```
+
+ load the  BRFSS data data from the p8105.datasets package.
+```
+```
+```{r problem 1}
+data(brfss_smart2010)
+View(brfss_smart2010)
+```
+
+format the data to use appropriate variable names;
+focus on the “Overall Health” topic
+include only responses from “Excellent” to “Poor”
+organize responses as a factor taking levels ordered from “Excellent” to “Poor”
+```{r}
+brfss_smart =
+  brfss_smart2010 %>% 
+  janitor::clean_names() %>% 
+  filter(topic == "Overall Health") %>% 
+  mutate(response = factor(response, levels = (c("Excellent", "Very good", "Good", "Fair", "Poor")))) %>% 
+  arrange(response) %>% 
+  janitor::clean_names()
+
+```
+
+In 2002, which states were observed at 7 locations? - CT, FL, NC
+```{r}
+brfss_smart_2002 = 
+  brfss_smart %>%  
+  filter(year == 2002) %>% 
+  select(locationdesc, locationabbr) %>% 
+  distinct %>% 
+  count(locationabbr) %>% 
+  filter(n == 7)
+
+```
+Make a “spaghetti plot” that shows the number of locations in each state from 2002 to 2010.
+  As the dataset covers the years from 2002-2010, no need to select specific years
+```{r}
+brfss_smart_spaghetti =
+  brfss_smart %>%  
+  group_by(locationabbr,year) %>% 
+  summarize(n = n()) 
+
+ggplot(brfss_smart_spaghetti, aes(x = year, y = n)) +
+  geom_line(aes(color = locationabbr)) +
+  theme(legend.position = "bottom")
+   
+
+```
+
+Make a table showing, for the years 2002, 2006, and 2010, the mean and standard deviation of the proportion of “Excellent” responses across locations in NY State.
+```{r}
+brfss_smart_NY = 
+  brfss_smart %>% 
+  filter(locationabbr == "NY") %>% 
+  spread(key = response, value = data_value) %>% 
+  filter (year == 2002| year == 2006| year == 2010) %>% 
+  janitor::clean_names() %>% 
+  group_by(year) %>% 
+  summarise(mean_excellent = mean(excellent, na.rm = TRUE),
+      sd_excellent = sd (excellent, na.rm = TRUE)) %>% 
+   knitr::kable()
+  
+```
+
+For each year and state, compute the average proportion in each response category (taking the average across locations in a state). Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
+```{r}
+brfss_all = 
+  brfss_smart%>%
+  spread(key = response, value = data_value) %>% 
+  janitor::clean_names() %>% 
+  group_by(locationabbr,year) %>% 
+  summarise(mean_excellent = mean(excellent, na.rm = TRUE), 
+    mean_very_good = mean(very_good, na.rm = TRUE),
+    mean_good = mean(good, na.rm = TRUE),
+    mean_fair = mean(fair, na.rm = TRUE), 
+    mean_poor = mean(poor, na.rm = TRUE)) %>% 
+  gather(key = response, value = mean, "mean_poor","mean_fair","mean_good","mean_very_good","mean_excellent")
+  
+ggplot (brfss_all,aes(x = year, y = mean))+ 
+  facet_grid (~response)+
+  geom_line(aes(color = locationabbr))
+  theme(legend.position = "bottom")
+
+```
+
+
+Problem 2 - load data from p8105 datasets
+```{r}
+data(instacart)
+View(instacart)
+```
+ write a short description of the dataset, noting the size and structure of the data, describing some key variables, and giving illstrative examples of observations.
+ 
+```{r}
+nrow(instacart)
+ncol(instacart)
+```
+ How many aisles are there? - 134
+```{r}
+n_aisles =
+  instacart %>% 
+  janitor::clean_names() %>% 
+  select(aisle_id, aisle) %>% 
+  distinct %>% 
+  nrow
+```
+ which aisles are the most items ordered from - Aisle 83 and 24
+```{r}
+instacart %>% 
+  count(aisle_id) %>% 
+  arrange(desc(n)) %>% 
+  filter(n > 100000) %>% 
+  knitr::kable()
+```
+Make a plot that shows the number of items ordered in each aisle. Order aisles sensibly, and organize your plot so others can read it.
+```{r}
+instacart_number =
+  instacart%>% 
+  group_by(aisle_id) %>% 
+  summarize(n = n()) %>% 
+  rename(number_items = n)
+View(instacart_number)  
+
+ggplot(instacart_number, aes(x = aisle_id, y = number_items)) + 
+  geom_point()
+```
+
+
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
