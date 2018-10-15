@@ -145,7 +145,8 @@ View(instacart_number)
 
 ggplot(instacart_number, aes(x = aisle_id, y = number_items)) + 
   geom_bar(stat = "identity") +
-  scale_x_discrete()
+  scale_x_discrete()+
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 ```
 
@@ -159,6 +160,7 @@ instacart_popular =
             most_pop= max(product_name, na.rm = TRUE),
             most_pop = max(product_name, na.rm = TRUE)) %>% 
             knitr::kable()
+
 ```
 Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
 ```{r}
@@ -176,6 +178,90 @@ instacart_hour =
   knitr::kable()
 
 ```
+Problem 3 - upload ny_noaa
+```{r}
+data(ny_noaa)
+View(ny_noaa)
+
+```
+write a short description of the dataset, noting the size and structure of the data, describing some key variables, and indicating the extent to which missing data is an issue - This dataset is 2595176 rows, and 7 columns, with the key variables are temperature min/max, and variables for percipitation and snow, by date and id#. There appears to be a substantial amount of missing data
+
+Do some data cleaning. Create separate variables for year, month, and day. 
+```{r}
+ny_noaa_separate = 
+  ny_noaa %>% 
+  separate(date, into = c("year", "month", "day"))  
+  
+```
+
+Ensure observations for temperature, precipitation, and snowfall are given in reasonable units. For snowfall, what are the most commonly observed values? Why? - 0 is the most common value - it does not snow every day
+```{r}
+ny_noaa_snow =
+  ny_noaa_separate %>% 
+  count(snow) %>% 
+  arrange(desc(n)) %>% 
+  filter(n > 100) 
+ 
+ny_noaa_unit = 
+  ny_noaa_separate %>% 
+  mutate(tmax = as.integer(tmax),
+    tmax_unit = (tmax / 10)) %>% 
+  mutate (tmin = as.integer(tmin),
+    tmin_unit = (tmin / 10)) %>% 
+  select(year, month, day, prcp, snow, snwd, tmax_unit, tmin_unit)
+
+```
+make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers? - There are cold outliers in July in 1989, 1991, 2000, and 2006. There are warm outliers in 1995 and 2005. Structurally, the data appears bimodal, with january significantly colder than july. 
+```{r}
+ny_noaa_plot = 
+  ny_noaa_unit%>%
+  janitor::clean_names() %>% 
+  mutate(month = as.integer(month)) %>% 
+  filter(month == 01|month == 07) %>% 
+  group_by(month, year,tmax_unit) %>% 
+  summarise(mean_tmax_unit = mean(tmax_unit, na.rm = TRUE))
+  
+ ggplot (ny_noaa_plot,aes(x = year, y = mean_tmax_unit))+ 
+  facet_grid (~month)+
+  geom_point()+
+  theme(legend.position = "bottom")+
+   labs(
+  title = "average max temp in January and July"
+   ) + 
+   theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+```{r}
+install.packages("hexbin")
+library(hexbin)
+library(patchwork)
+
+noaa_snow = 
+  ny_noaa_unit %>% 
+  janitor::clean_names() %>% 
+  filter(snow < 100 & snow > 0)
+
+noaa_tmax_tmin_p = ggplot (ny_noaa_unit, aes(x = tmax_unit, y = tmin_unit))+ 
+  geom_hex()+
+  theme(legend.position = "none")+
+   labs(
+  title = "Temperature Max vs Min",
+    x = "maximum temp",
+    y = "minimum temp")
+
+snow_year_p = ggplot(noaa_snow, aes(x = year, y = snow)) + 
+  geom_boxplot() + 
+  theme(legend.position = "none") +
+  labs(
+  title = "Snowfall by year",
+  x = "Year",
+  y = "snowfall") 
+
+#combining plots with patchwork:
+noaa_tmax_tmin_p + snow_year_p
+
+```
+
 
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
